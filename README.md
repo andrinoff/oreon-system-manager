@@ -40,4 +40,4 @@ Run:
 
 ## License
 
-This project is protected by the See [LICENSE](LICENSE).
+Copyright (C) 2026 Oreon HQ. This program is licensed under GPL-3.0. See [LICENSE](LICENSE).
