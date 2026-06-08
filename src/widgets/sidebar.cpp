@@ -24,10 +24,10 @@ Sidebar::Sidebar(QWidget *parent)
     title->setFixedHeight(60);
     layout->addWidget(title);
 
-    addNavButton(layout, "Packages",   "package",   0);
-    addNavButton(layout, "Repos",      "repo",      1);
+    addNavButton(layout, "Packages", "package", 0);
+    addNavButton(layout, "Repos", "repo", 1);
     addNavButton(layout, "Containers", "container", 2);
-    addNavButton(layout, "Drivers",    "drivers",   3);
+    addNavButton(layout, "Drivers", "drivers", 3);
 
     layout->addStretch();
 
@@ -67,8 +67,8 @@ Sidebar::Sidebar(QWidget *parent)
     )");
 }
 
-void Sidebar::addNavButton(QVBoxLayout *layout, const QString &label,
-                           const QString & /*icon*/, int index)
+void Sidebar::addNavButton(QVBoxLayout *layout, const QString &label, const QString & /*icon*/,
+                           int index)
 {
     auto *btn = new QPushButton(label, this);
     btn->setCheckable(true);

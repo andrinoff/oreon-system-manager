@@ -11,21 +11,21 @@ class RepoPage : public QWidget
 {
     Q_OBJECT
 
-public:
+  public:
     explicit RepoPage(QWidget *parent = nullptr);
 
-private slots:
+  private slots:
     void loadRepos();
     void onToggleRepo();
     void onProcessOutput();
     void onProcessFinished(int exitCode);
 
-private:
+  private:
     void runDnfConfig(const QStringList &args);
 
     QListWidget *m_repoList;
     QPushButton *m_toggleBtn;
     QPushButton *m_refreshBtn;
-    QTextEdit   *m_output;
-    QProcess    *m_process;
+    QTextEdit *m_output;
+    QProcess *m_process;
 };

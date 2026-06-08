@@ -17,7 +17,7 @@ class TestPages : public QObject
 {
     Q_OBJECT
 
-private slots:
+  private slots:
     void packagePageConstructs();
     void repoPageConstructs();
     void containerPageConstructs();
@@ -31,7 +31,7 @@ void TestPages::packagePageConstructs()
     page.show();
     QVERIFY(page.isVisible());
     QVERIFY(page.findChild<QListWidget *>() != nullptr);
-    QVERIFY(page.findChild<QTextEdit *>()   != nullptr);
+    QVERIFY(page.findChild<QTextEdit *>() != nullptr);
 }
 
 void TestPages::repoPageConstructs()

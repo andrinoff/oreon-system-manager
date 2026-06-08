@@ -25,13 +25,13 @@ RepoPage::RepoPage(QWidget *parent)
 
     m_repoList = new QListWidget(splitter);
 
-    auto *bottomPane  = new QWidget(splitter);
+    auto *bottomPane = new QWidget(splitter);
     auto *bottomLayout = new QVBoxLayout(bottomPane);
     bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(6);
 
     auto *btnRow = new QHBoxLayout;
-    m_toggleBtn  = new QPushButton("Enable / Disable", this);
+    m_toggleBtn = new QPushButton("Enable / Disable", this);
     m_refreshBtn = new QPushButton("Refresh", this);
     m_toggleBtn->setEnabled(false);
     btnRow->addWidget(m_toggleBtn);
@@ -51,16 +51,15 @@ RepoPage::RepoPage(QWidget *parent)
 
     root->addWidget(splitter, 1);
 
-    connect(m_refreshBtn,  &QPushButton::clicked, this, &RepoPage::loadRepos);
-    connect(m_toggleBtn,   &QPushButton::clicked, this, &RepoPage::onToggleRepo);
-    connect(m_repoList, &QListWidget::itemSelectionChanged, this, [this] {
-        m_toggleBtn->setEnabled(!m_repoList->selectedItems().isEmpty());
-    });
+    connect(m_refreshBtn, &QPushButton::clicked, this, &RepoPage::loadRepos);
+    connect(m_toggleBtn, &QPushButton::clicked, this, &RepoPage::onToggleRepo);
+    connect(m_repoList, &QListWidget::itemSelectionChanged, this,
+            [this] { m_toggleBtn->setEnabled(!m_repoList->selectedItems().isEmpty()); });
 
     connect(m_process, &QProcess::readyReadStandardOutput, this, &RepoPage::onProcessOutput);
-    connect(m_process, &QProcess::readyReadStandardError,  this, &RepoPage::onProcessOutput);
-    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, [this](int code, QProcess::ExitStatus) { onProcessFinished(code); });
+    connect(m_process, &QProcess::readyReadStandardError, this, &RepoPage::onProcessOutput);
+    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this](int code, QProcess::ExitStatus) { onProcessFinished(code); });
 
     loadRepos();
 }
@@ -77,11 +76,12 @@ void RepoPage::loadRepos()
 void RepoPage::onToggleRepo()
 {
     auto *item = m_repoList->currentItem();
-    if (!item) return;
+    if (!item)
+        return;
 
     // First token in the line is the repo-id
     const QString repoId = item->text().split(' ').first();
-    const bool enabled   = item->text().contains("enabled");
+    const bool enabled = item->text().contains("enabled");
     const QString action = enabled ? "--disablerepo" : "--enablerepo";
 
     runDnfConfig({action, repoId});
@@ -106,9 +106,8 @@ void RepoPage::onProcessOutput()
 
 void RepoPage::onProcessFinished(int exitCode)
 {
-    m_output->append(exitCode == 0
-        ? "\n[Done]"
-        : QString("\n[Failed — exit code %1]").arg(exitCode));
+    m_output->append(exitCode == 0 ? "\n[Done]"
+                                   : QString("\n[Failed — exit code %1]").arg(exitCode));
 }
 
 void RepoPage::runDnfConfig(const QStringList &args)
@@ -117,6 +116,6 @@ void RepoPage::runDnfConfig(const QStringList &args)
         m_process->kill();
 
     m_process->setProgram("pkexec");
-    m_process->setArguments(QStringList{"dnf", "config-manager"} + args);
+    m_process->setArguments(QStringList {"dnf", "config-manager"} + args);
     m_process->start();
 }

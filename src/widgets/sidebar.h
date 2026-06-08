@@ -9,15 +9,14 @@ class Sidebar : public QWidget
 {
     Q_OBJECT
 
-public:
+  public:
     explicit Sidebar(QWidget *parent = nullptr);
 
-signals:
+  signals:
     void pageRequested(int index);
 
-private:
-    void addNavButton(QVBoxLayout *layout, const QString &label,
-                      const QString &icon, int index);
+  private:
+    void addNavButton(QVBoxLayout *layout, const QString &label, const QString &icon, int index);
 
     QButtonGroup *m_group;
 };
