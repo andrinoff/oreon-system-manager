@@ -34,28 +34,38 @@ jobs:
           echo "PR Author: $AUTHOR"
           echo "======================="
 
-          echo "Testing API access to the team..."
-          if ! gh api orgs/$ORG/teams/$TEAM > /dev/null 2>&1; then
+          echo "Fetching team members..."
+          # We grab the raw JSON array of all members in the team
+          MEMBERS_JSON=$(gh api orgs/$ORG/teams/$TEAM/members) || {
             echo "❌ CRITICAL ERROR: The bot cannot find the team '$TEAM'."
             echo "Either the team slug is different, or the App lacks 'Members: Read-only' permission at the Org level."
             exit 1
-          fi
+          }
 
-          echo "Checking if @$AUTHOR is a member of the '$TEAM' team..."
-          if gh api orgs/$ORG/teams/$TEAM/memberships/$AUTHOR > /dev/null 2>&1; then
-            echo "✅ Author is a maintainer. Having the bot submit an official approval..."
+          # Count how many members are in the array
+          MEMBER_COUNT=$(echo "$MEMBERS_JSON" | jq 'length')
+          echo "Team size: $MEMBER_COUNT member(s)"
 
-            if ! gh pr review $PR --repo ${{ github.repository }} --approve --body "🤖 **Auto-Approved:** PR authored by an authorized maintainer (@$AUTHOR)."; then
-              echo "❌ CRITICAL ERROR: Bot failed to submit the review. Ensure it has 'Pull requests: Read and write' permission."
-              exit 1
+          # 1. Auto-Approve ONLY if the team has exactly 1 member AND that member is the author
+          if [ "$MEMBER_COUNT" -eq 1 ]; then
+            SOLE_MEMBER=$(echo "$MEMBERS_JSON" | jq -r '.[0].login')
+
+            if [ "$SOLE_MEMBER" == "$AUTHOR" ]; then
+              echo "✅ @$AUTHOR is the sole maintainer of this repository. Auto-approving..."
+
+              if ! gh pr review $PR --repo ${{ github.repository }} --approve --body "🤖 **Auto-Approved:** PR authored by the sole repository maintainer (@$AUTHOR)."; then
+                echo "❌ CRITICAL ERROR: Bot failed to submit the review. Ensure it has 'Pull requests: Read and write' permission."
+                exit 1
+              fi
+
+              echo "✅ Auto-approval successful."
+              exit 0
             fi
-
-            echo "✅ Auto-approval successful."
-            exit 0
           fi
 
-          echo "⚠️ @$AUTHOR is not a member of the '$TEAM' team. Checking for manual approvals..."
+          echo "⚠️ @$AUTHOR is not a solo maintainer. Checking for manual approvals..."
 
+          # 2. If not a solo maintainer, check for manual approvals from any team member
           APPROVERS=$(gh api repos/$ORG/$TEAM/pulls/$PR/reviews --jq '.[] | select(.state == "APPROVED") | .user.login' | sort -u)
 
           if [ -z "$APPROVERS" ]; then
@@ -65,6 +75,7 @@ jobs:
 
           APPROVED=false
           for USER in $APPROVERS; do
+            # Check if the person who approved is actually in the team
             if gh api orgs/$ORG/teams/$TEAM/memberships/$USER > /dev/null 2>&1; then
               echo "✅ Approved by authorized maintainer: @$USER"
               APPROVED=true
