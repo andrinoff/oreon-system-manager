@@ -1,0 +1,44 @@
+name: Fast-Forward Merge
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  merge:
+    if: ${{ github.event.issue.pull_request && github.event.comment.body == '/m' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate Token
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.get_token.outputs.token }}
+          fetch-depth: 0
+
+      - name: Fetch PR Details
+        id: pr
+        env:
+          GH_TOKEN: ${{ steps.get_token.outputs.token }}
+        run: |
+          PR_DATA=$(gh pr view ${{ github.event.issue.number }} --json headRefName,baseRefName)
+          echo "head=$(echo "$PR_DATA" | jq -r .headRefName)" >> $GITHUB_OUTPUT
+          echo "base=$(echo "$PR_DATA" | jq -r .baseRefName)" >> $GITHUB_OUTPUT
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Merge
+        run: |
+          git fetch origin ${{ steps.pr.outputs.head }}
+          git checkout ${{ steps.pr.outputs.base }}
+          git merge --ff-only origin/${{ steps.pr.outputs.head }}
+          git push origin ${{ steps.pr.outputs.base }}
