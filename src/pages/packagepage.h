@@ -2,9 +2,9 @@
 
 #include <QWidget>
 
+class CollapsibleOutput;
 class QLineEdit;
 class QListWidget;
-class QTextEdit;
 class QPushButton;
 class QProcess;
 
@@ -29,6 +29,6 @@ class PackagePage : public QWidget
     QListWidget *m_packageList;
     QPushButton *m_installBtn;
     QPushButton *m_removeBtn;
-    QTextEdit *m_output;
+    CollapsibleOutput *m_output;
     QProcess *m_process;
 };

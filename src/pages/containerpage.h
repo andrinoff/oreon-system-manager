@@ -2,8 +2,8 @@
 
 #include <QWidget>
 
+class CollapsibleOutput;
 class QListWidget;
-class QTextEdit;
 class QPushButton;
 class QTabWidget;
 class QProcess;
@@ -22,14 +22,13 @@ class ContainerPage : public QWidget
     void onDistroboxAction(const QString &action);
 
   private:
-    // Each backend gets its own process so concurrent refreshes don't race.
     void runDocker(const QStringList &args);
     void runDistrobox(const QStringList &args);
 
     QTabWidget *m_tabs;
     QListWidget *m_dockerList;
     QListWidget *m_distroboxList;
-    QTextEdit *m_output;
+    CollapsibleOutput *m_output;
     QProcess *m_dockerProcess;
     QProcess *m_distroboxProcess;
 };

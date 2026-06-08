@@ -1,12 +1,12 @@
 #include "repopage.h"
+#include "widgets/collapsibleoutput.h"
 
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QProcess>
 #include <QPushButton>
-#include <QSplitter>
-#include <QTextEdit>
 #include <QVBoxLayout>
 
 RepoPage::RepoPage(QWidget *parent)
@@ -14,43 +14,48 @@ RepoPage::RepoPage(QWidget *parent)
     , m_process(new QProcess(this))
 {
     auto *root = new QVBoxLayout(this);
-    root->setContentsMargins(20, 20, 20, 20);
-    root->setSpacing(12);
+    root->setContentsMargins(28, 28, 28, 24);
+    root->setSpacing(0);
 
-    auto *title = new QLabel("Repository Management", this);
+    // ── Title ──────────────────────────────────────────────────
+    auto *title = new QLabel("Repositories", this);
     title->setObjectName("pageTitle");
     root->addWidget(title);
+    root->addSpacing(20);
 
-    auto *splitter = new QSplitter(Qt::Vertical, this);
+    // ── Card: repo list ────────────────────────────────────────
+    auto *card = new QFrame(this);
+    card->setObjectName("card");
+    auto *cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(0, 0, 0, 0);
+    cardLayout->setSpacing(0);
 
-    m_repoList = new QListWidget(splitter);
+    m_repoList = new QListWidget(card);
+    m_repoList->setObjectName("cardList");
+    cardLayout->addWidget(m_repoList);
 
-    auto *bottomPane = new QWidget(splitter);
-    auto *bottomLayout = new QVBoxLayout(bottomPane);
-    bottomLayout->setContentsMargins(0, 0, 0, 0);
-    bottomLayout->setSpacing(6);
+    root->addWidget(card, 1);
+    root->addSpacing(10);
 
-    auto *btnRow = new QHBoxLayout;
+    // ── Action buttons ─────────────────────────────────────────
+    auto *actionRow = new QHBoxLayout;
+    actionRow->setSpacing(8);
+
     m_toggleBtn = new QPushButton("Enable / Disable", this);
     m_refreshBtn = new QPushButton("Refresh", this);
     m_toggleBtn->setEnabled(false);
-    btnRow->addWidget(m_toggleBtn);
-    btnRow->addStretch();
-    btnRow->addWidget(m_refreshBtn);
-    bottomLayout->addLayout(btnRow);
 
-    m_output = new QTextEdit(this);
-    m_output->setReadOnly(true);
-    m_output->setObjectName("terminal");
-    bottomLayout->addWidget(m_output);
+    actionRow->addWidget(m_toggleBtn);
+    actionRow->addStretch();
+    actionRow->addWidget(m_refreshBtn);
+    root->addLayout(actionRow);
+    root->addSpacing(14);
 
-    splitter->addWidget(m_repoList);
-    splitter->addWidget(bottomPane);
-    splitter->setStretchFactor(0, 2);
-    splitter->setStretchFactor(1, 1);
+    // ── Collapsible output ─────────────────────────────────────
+    m_output = new CollapsibleOutput(this);
+    root->addWidget(m_output);
 
-    root->addWidget(splitter, 1);
-
+    // ── Connections ────────────────────────────────────────────
     connect(m_refreshBtn, &QPushButton::clicked, this, &RepoPage::loadRepos);
     connect(m_toggleBtn, &QPushButton::clicked, this, &RepoPage::onToggleRepo);
     connect(m_repoList, &QListWidget::itemSelectionChanged, this,
@@ -78,12 +83,10 @@ void RepoPage::onToggleRepo()
     auto *item = m_repoList->currentItem();
     if (!item)
         return;
-
-    // First token in the line is the repo-id
     const QString repoId = item->text().split(' ').first();
     const bool enabled = item->text().contains("enabled");
     const QString action = enabled ? "--disablerepo" : "--enablerepo";
-
+    m_output->expand();
     runDnfConfig({action, repoId});
 }
 
@@ -114,7 +117,6 @@ void RepoPage::runDnfConfig(const QStringList &args)
 {
     if (m_process->state() != QProcess::NotRunning)
         m_process->kill();
-
     m_process->setProgram("pkexec");
     m_process->setArguments(QStringList {"dnf", "config-manager"} + args);
     m_process->start();

@@ -23,10 +23,13 @@ endif()
 add_library(oreon_core STATIC
     src/mainwindow.cpp
     src/widgets/sidebar.cpp
+    src/widgets/collapsibleoutput.cpp
     src/pages/packagepage.cpp
     src/pages/repopage.cpp
     src/pages/containerpage.cpp
     src/pages/driverspage.cpp
+    src/theme/thememanager.cpp
+    resources.qrc
 )
 
 target_link_libraries(oreon_core PUBLIC Qt6::Widgets Qt6::Core Qt6::Concurrent)

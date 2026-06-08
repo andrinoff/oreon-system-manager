@@ -3,6 +3,7 @@
 #include <QWidget>
 
 class QButtonGroup;
+class QPushButton;
 class QVBoxLayout;
 
 class Sidebar : public QWidget
@@ -19,4 +20,5 @@ class Sidebar : public QWidget
     void addNavButton(QVBoxLayout *layout, const QString &label, const QString &icon, int index);
 
     QButtonGroup *m_group;
+    QPushButton *m_themeBtn;
 };

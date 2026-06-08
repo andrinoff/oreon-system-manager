@@ -1,24 +1,27 @@
 #include "containerpage.h"
+#include "widgets/collapsibleoutput.h"
 
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QProcess>
 #include <QPushButton>
-#include <QSplitter>
 #include <QTabWidget>
-#include <QTextEdit>
 #include <QVBoxLayout>
 
-static QWidget *makeContainerTab(QListWidget *list, const QStringList &actions, QObject *receiver,
-                                 std::function<void(const QString &)> handler)
+// Build one tab: action buttons at the top, list fills the rest.
+static QWidget *makeTab(QListWidget *list, const QStringList &actions, QObject *receiver,
+                        std::function<void(const QString &)> handler)
 {
     auto *tab = new QWidget;
     auto *layout = new QVBoxLayout(tab);
     layout->setContentsMargins(0, 8, 0, 0);
-    layout->setSpacing(6);
+    layout->setSpacing(8);
 
     auto *btnRow = new QHBoxLayout;
+    btnRow->setContentsMargins(12, 0, 12, 0);
+    btnRow->setSpacing(8);
     for (const QString &action : actions) {
         auto *btn = new QPushButton(action);
         btn->setCursor(Qt::PointingHandCursor);
@@ -29,13 +32,14 @@ static QWidget *makeContainerTab(QListWidget *list, const QStringList &actions, 
     btnRow->addStretch();
     layout->addLayout(btnRow);
     layout->addWidget(list, 1);
+
     return tab;
 }
 
-// Wire a process so stdout lines populate `list` when `listArg` appears in the
-// arguments, and all output also goes to the shared terminal pane.
+// Wire a process so its stdout populates `list` when `listArg` is in the args,
+// and all output goes to the shared CollapsibleOutput.
 static void connectProcess(QProcess *proc, QListWidget *list, const QString &listArg,
-                           QTextEdit *output)
+                           CollapsibleOutput *output)
 {
     QObject::connect(proc, &QProcess::readyReadStandardOutput, proc, [proc, list, listArg, output] {
         const QByteArray data = proc->readAllStandardOutput();
@@ -66,41 +70,49 @@ ContainerPage::ContainerPage(QWidget *parent)
     , m_distroboxProcess(new QProcess(this))
 {
     auto *root = new QVBoxLayout(this);
-    root->setContentsMargins(20, 20, 20, 20);
-    root->setSpacing(12);
+    root->setContentsMargins(28, 28, 28, 24);
+    root->setSpacing(0);
 
-    auto *title = new QLabel("Container Management", this);
+    // ── Title ──────────────────────────────────────────────────
+    auto *title = new QLabel("Containers", this);
     title->setObjectName("pageTitle");
     root->addWidget(title);
+    root->addSpacing(20);
 
-    auto *splitter = new QSplitter(Qt::Vertical, this);
+    // ── Card: tab widget ───────────────────────────────────────
+    auto *card = new QFrame(this);
+    card->setObjectName("card");
+    auto *cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(0, 0, 0, 0);
+    cardLayout->setSpacing(0);
 
-    m_tabs = new QTabWidget(splitter);
+    m_output = new CollapsibleOutput(this);
+
+    m_tabs = new QTabWidget(card);
+    m_tabs->setObjectName("cardTabs");
+
     m_dockerList = new QListWidget;
     m_distroboxList = new QListWidget;
-
-    m_output = new QTextEdit(splitter);
-    m_output->setReadOnly(true);
-    m_output->setObjectName("terminal");
-    m_output->setPlaceholderText("Command output appears here…");
+    m_dockerList->setObjectName("cardList");
+    m_distroboxList->setObjectName("cardList");
 
     connectProcess(m_dockerProcess, m_dockerList, "ps", m_output);
     connectProcess(m_distroboxProcess, m_distroboxList, "list", m_output);
 
-    m_tabs->addTab(makeContainerTab(m_dockerList, {"Start", "Stop", "Remove", "Refresh"}, this,
-                                    [this](const QString &a) { onDockerAction(a); }),
+    m_tabs->addTab(makeTab(m_dockerList, {"Start", "Stop", "Remove", "Refresh"}, this,
+                           [this](const QString &a) { onDockerAction(a); }),
                    "Docker");
 
-    m_tabs->addTab(makeContainerTab(m_distroboxList, {"Enter", "Stop", "Delete", "Refresh"}, this,
-                                    [this](const QString &a) { onDistroboxAction(a); }),
+    m_tabs->addTab(makeTab(m_distroboxList, {"Enter", "Stop", "Delete", "Refresh"}, this,
+                           [this](const QString &a) { onDistroboxAction(a); }),
                    "Distrobox");
 
-    splitter->addWidget(m_tabs);
-    splitter->addWidget(m_output);
-    splitter->setStretchFactor(0, 2);
-    splitter->setStretchFactor(1, 1);
+    cardLayout->addWidget(m_tabs);
+    root->addWidget(card, 1);
+    root->addSpacing(14);
 
-    root->addWidget(splitter, 1);
+    // ── Collapsible output ─────────────────────────────────────
+    root->addWidget(m_output);
 
     refreshDocker();
     refreshDistrobox();
@@ -124,12 +136,11 @@ void ContainerPage::onDockerAction(const QString &action)
         refreshDocker();
         return;
     }
-
     auto *item = m_dockerList->currentItem();
     if (!item)
         return;
-
     const QString name = item->text().split('\t').first();
+    m_output->expand();
     if (action == "Start")
         runDocker({"start", name});
     else if (action == "Stop")
@@ -144,12 +155,11 @@ void ContainerPage::onDistroboxAction(const QString &action)
         refreshDistrobox();
         return;
     }
-
     auto *item = m_distroboxList->currentItem();
     if (!item)
         return;
-
     const QString name = item->text().split('|').first().trimmed();
+    m_output->expand();
     if (action == "Enter")
         runDistrobox({"enter", name});
     else if (action == "Stop")

@@ -1,12 +1,12 @@
 #include "driverspage.h"
+#include "widgets/collapsibleoutput.h"
 
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QProcess>
 #include <QPushButton>
-#include <QSplitter>
-#include <QTextEdit>
 #include <QVBoxLayout>
 
 DriversPage::DriversPage(QWidget *parent)
@@ -14,49 +14,54 @@ DriversPage::DriversPage(QWidget *parent)
     , m_process(new QProcess(this))
 {
     auto *root = new QVBoxLayout(this);
-    root->setContentsMargins(20, 20, 20, 20);
-    root->setSpacing(12);
+    root->setContentsMargins(28, 28, 28, 24);
+    root->setSpacing(0);
 
+    // ── Title + subtitle ───────────────────────────────────────
     auto *title = new QLabel("Drivers", this);
     title->setObjectName("pageTitle");
     root->addWidget(title);
+    root->addSpacing(4);
 
-    auto *desc =
-        new QLabel("Detect hardware and install the appropriate drivers via DNF or akmod.", this);
-    desc->setWordWrap(true);
-    desc->setObjectName("pageSubtitle");
-    root->addWidget(desc);
+    auto *sub = new QLabel("Detect hardware and install the appropriate drivers.", this);
+    sub->setObjectName("pageSubtitle");
+    sub->setWordWrap(true);
+    root->addWidget(sub);
+    root->addSpacing(20);
 
-    auto *splitter = new QSplitter(Qt::Vertical, this);
+    // ── Card: driver list ──────────────────────────────────────
+    auto *card = new QFrame(this);
+    card->setObjectName("card");
+    auto *cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(0, 0, 0, 0);
+    cardLayout->setSpacing(0);
 
-    m_driverList = new QListWidget(splitter);
+    m_driverList = new QListWidget(card);
+    m_driverList->setObjectName("cardList");
+    cardLayout->addWidget(m_driverList);
 
-    auto *bottomPane = new QWidget(splitter);
-    auto *bottomLayout = new QVBoxLayout(bottomPane);
-    bottomLayout->setContentsMargins(0, 0, 0, 0);
-    bottomLayout->setSpacing(6);
+    root->addWidget(card, 1);
+    root->addSpacing(10);
 
-    auto *btnRow = new QHBoxLayout;
+    // ── Action buttons ─────────────────────────────────────────
+    auto *actionRow = new QHBoxLayout;
+    actionRow->setSpacing(8);
+
     m_detectBtn = new QPushButton("Detect Hardware", this);
     m_installBtn = new QPushButton("Install Driver", this);
     m_installBtn->setEnabled(false);
-    btnRow->addWidget(m_detectBtn);
-    btnRow->addWidget(m_installBtn);
-    btnRow->addStretch();
-    bottomLayout->addLayout(btnRow);
 
-    m_output = new QTextEdit(this);
-    m_output->setReadOnly(true);
-    m_output->setObjectName("terminal");
-    bottomLayout->addWidget(m_output);
+    actionRow->addWidget(m_detectBtn);
+    actionRow->addWidget(m_installBtn);
+    actionRow->addStretch();
+    root->addLayout(actionRow);
+    root->addSpacing(14);
 
-    splitter->addWidget(m_driverList);
-    splitter->addWidget(bottomPane);
-    splitter->setStretchFactor(0, 2);
-    splitter->setStretchFactor(1, 1);
+    // ── Collapsible output ─────────────────────────────────────
+    m_output = new CollapsibleOutput(this);
+    root->addWidget(m_output);
 
-    root->addWidget(splitter, 1);
-
+    // ── Connections ────────────────────────────────────────────
     connect(m_detectBtn, &QPushButton::clicked, this, &DriversPage::detectDrivers);
     connect(m_installBtn, &QPushButton::clicked, this, &DriversPage::onInstallDriver);
     connect(m_driverList, &QListWidget::itemSelectionChanged, this,
@@ -72,9 +77,8 @@ void DriversPage::detectDrivers()
 {
     m_driverList->clear();
     m_output->clear();
+    m_output->expand();
     m_output->append("Detecting hardware…");
-
-    // Use lspci to enumerate hardware, then suggest likely driver packages
     runCommand("bash", {"-c", "lspci -mm | awk -F'\"' '{print $2, $4}' | sort -u"});
 }
 
@@ -83,12 +87,11 @@ void DriversPage::onInstallDriver()
     auto *item = m_driverList->currentItem();
     if (!item)
         return;
-
     const QString pkg = item->data(Qt::UserRole).toString();
     if (pkg.isEmpty())
         return;
-
     m_output->clear();
+    m_output->expand();
     runCommand("pkexec", {"dnf", "install", "-y", pkg});
 }
 
@@ -119,7 +122,6 @@ void DriversPage::runCommand(const QString &program, const QStringList &args)
 {
     if (m_process->state() != QProcess::NotRunning)
         m_process->kill();
-
     m_process->setProgram(program);
     m_process->setArguments(args);
     m_process->start();

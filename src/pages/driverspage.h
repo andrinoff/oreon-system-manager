@@ -2,8 +2,8 @@
 
 #include <QWidget>
 
+class CollapsibleOutput;
 class QListWidget;
-class QTextEdit;
 class QPushButton;
 class QProcess;
 
@@ -24,8 +24,8 @@ class DriversPage : public QWidget
     void runCommand(const QString &program, const QStringList &args);
 
     QListWidget *m_driverList;
-    QPushButton *m_installBtn;
     QPushButton *m_detectBtn;
-    QTextEdit *m_output;
+    QPushButton *m_installBtn;
+    CollapsibleOutput *m_output;
     QProcess *m_process;
 };

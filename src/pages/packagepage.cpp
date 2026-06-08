@@ -1,13 +1,13 @@
 #include "packagepage.h"
+#include "widgets/collapsibleoutput.h"
 
+#include <QFrame>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QProcess>
 #include <QPushButton>
-#include <QSplitter>
-#include <QTextEdit>
 #include <QVBoxLayout>
 
 PackagePage::PackagePage(QWidget *parent)
@@ -15,59 +15,68 @@ PackagePage::PackagePage(QWidget *parent)
     , m_process(new QProcess(this))
 {
     auto *root = new QVBoxLayout(this);
-    root->setContentsMargins(20, 20, 20, 20);
-    root->setSpacing(12);
+    root->setContentsMargins(28, 28, 28, 24);
+    root->setSpacing(0);
 
-    auto *title = new QLabel("Package Management", this);
+    // ── Title ──────────────────────────────────────────────────
+    auto *title = new QLabel("Packages", this);
     title->setObjectName("pageTitle");
     root->addWidget(title);
+    root->addSpacing(16);
 
-    // Search row
+    // ── Search row ─────────────────────────────────────────────
     auto *searchRow = new QHBoxLayout;
+    searchRow->setSpacing(10);
+
     m_searchBar = new QLineEdit(this);
     m_searchBar->setPlaceholderText("Search packages…");
+
     auto *searchBtn = new QPushButton("Search", this);
-    searchRow->addWidget(m_searchBar);
+
+    searchRow->addWidget(m_searchBar, 1);
     searchRow->addWidget(searchBtn);
     root->addLayout(searchRow);
+    root->addSpacing(12);
 
-    // Splitter: package list | output terminal
-    auto *splitter = new QSplitter(Qt::Vertical, this);
+    // ── Card: package list ─────────────────────────────────────
+    auto *card = new QFrame(this);
+    card->setObjectName("card");
+    auto *cardLayout = new QVBoxLayout(card);
+    cardLayout->setContentsMargins(0, 0, 0, 0);
+    cardLayout->setSpacing(0);
 
-    m_packageList = new QListWidget(splitter);
+    m_packageList = new QListWidget(card);
+    m_packageList->setObjectName("cardList");
+    cardLayout->addWidget(m_packageList);
 
-    auto *bottomPane = new QWidget(splitter);
-    auto *bottomLayout = new QVBoxLayout(bottomPane);
-    bottomLayout->setContentsMargins(0, 0, 0, 0);
-    bottomLayout->setSpacing(6);
+    root->addWidget(card, 1);
+    root->addSpacing(10);
 
-    auto *btnRow = new QHBoxLayout;
+    // ── Action buttons ─────────────────────────────────────────
+    auto *actionRow = new QHBoxLayout;
+    actionRow->setSpacing(8);
+
     m_installBtn = new QPushButton("Install", this);
     m_removeBtn = new QPushButton("Remove", this);
     m_installBtn->setEnabled(false);
     m_removeBtn->setEnabled(false);
-    btnRow->addWidget(m_installBtn);
-    btnRow->addWidget(m_removeBtn);
-    btnRow->addStretch();
-    bottomLayout->addLayout(btnRow);
 
-    m_output = new QTextEdit(this);
-    m_output->setReadOnly(true);
-    m_output->setObjectName("terminal");
-    m_output->setPlaceholderText("Command output appears here…");
-    bottomLayout->addWidget(m_output);
+    actionRow->addWidget(m_installBtn);
+    actionRow->addWidget(m_removeBtn);
+    actionRow->addStretch();
+    root->addLayout(actionRow);
+    root->addSpacing(14);
 
-    splitter->addWidget(m_packageList);
-    splitter->addWidget(bottomPane);
-    splitter->setStretchFactor(0, 2);
-    splitter->setStretchFactor(1, 1);
+    // ── Collapsible output ─────────────────────────────────────
+    m_output = new CollapsibleOutput(this);
+    root->addWidget(m_output);
 
-    root->addWidget(splitter, 1);
-
+    // ── Connections ────────────────────────────────────────────
     connect(searchBtn, &QPushButton::clicked, this, &PackagePage::onSearch);
     connect(m_searchBar, &QLineEdit::returnPressed, this, &PackagePage::onSearch);
     connect(m_installBtn, &QPushButton::clicked, this, &PackagePage::onInstall);
     connect(m_removeBtn, &QPushButton::clicked, this, &PackagePage::onRemove);
+
     connect(m_packageList, &QListWidget::itemSelectionChanged, this, [this] {
         bool sel = !m_packageList->selectedItems().isEmpty();
         m_installBtn->setEnabled(sel);
@@ -85,7 +94,6 @@ void PackagePage::onSearch()
     const QString query = m_searchBar->text().trimmed();
     if (query.isEmpty())
         return;
-
     m_packageList->clear();
     m_output->clear();
     runDnf({"search", "--quiet", query});
@@ -96,10 +104,9 @@ void PackagePage::onInstall()
     auto *item = m_packageList->currentItem();
     if (!item)
         return;
-
-    // Package name is the first token before whitespace in the list item
     const QString pkg = item->text().split(' ').first().split('.').first();
     m_output->clear();
+    m_output->expand();
     runDnf({"install", "-y", pkg});
 }
 
@@ -108,9 +115,9 @@ void PackagePage::onRemove()
     auto *item = m_packageList->currentItem();
     if (!item)
         return;
-
     const QString pkg = item->text().split(' ').first().split('.').first();
     m_output->clear();
+    m_output->expand();
     runDnf({"remove", "-y", pkg});
 }
 
@@ -120,7 +127,6 @@ void PackagePage::onProcessOutput()
     const QByteArray stdErr = m_process->readAllStandardError();
 
     if (!stdOut.isEmpty()) {
-        // Populate list when search results arrive
         if (m_process->arguments().contains("search")) {
             for (const QByteArray &line : stdOut.split('\n')) {
                 const QString text = QString::fromUtf8(line).trimmed();
@@ -145,12 +151,11 @@ void PackagePage::runDnf(const QStringList &args)
     if (m_process->state() != QProcess::NotRunning)
         m_process->kill();
 
-    m_process->setProgram("pkexec");
-    // For read-only ops (search/list) skip pkexec to avoid auth prompts
     if (args.first() == "search" || args.first() == "list") {
         m_process->setProgram("dnf");
         m_process->setArguments(args);
     } else {
+        m_process->setProgram("pkexec");
         m_process->setArguments(QStringList {"dnf"} + args);
     }
     m_process->start();

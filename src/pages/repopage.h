@@ -2,8 +2,8 @@
 
 #include <QWidget>
 
+class CollapsibleOutput;
 class QListWidget;
-class QTextEdit;
 class QPushButton;
 class QProcess;
 
@@ -26,6 +26,6 @@ class RepoPage : public QWidget
     QListWidget *m_repoList;
     QPushButton *m_toggleBtn;
     QPushButton *m_refreshBtn;
-    QTextEdit *m_output;
+    CollapsibleOutput *m_output;
     QProcess *m_process;
 };
