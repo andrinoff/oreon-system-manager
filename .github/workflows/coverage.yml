@@ -1,0 +1,63 @@
+name: Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  coverage:
+    name: Code coverage (gcovr)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y qt6-base-dev cmake ninja-build g++ gcovr
+
+      - name: Make mock scripts executable
+        run: chmod +x tests/mocks/*
+
+      - name: Configure with coverage instrumentation
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DBUILD_TESTING=ON \
+            -DBUILD_COVERAGE=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Run tests
+        working-directory: build
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: ctest --output-on-failure --timeout 30
+
+      - name: Generate coverage report
+        run: |
+          mkdir -p coverage-html
+          gcovr \
+            --root . \
+            --filter 'src/' \
+            --html-details coverage-html/index.html \
+            --print-summary | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-html/
+          retention-days: 14
+
+      # To publish to Codecov, add CODECOV_TOKEN to repo secrets and uncomment:
+      # - name: Upload to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     gcov: true
+      #     gcov_include: src/

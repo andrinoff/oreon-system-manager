@@ -1,4 +1,5 @@
 build/
+coverage-html/
 .cmake/
 CMakeCache.txt
 CMakeFiles/

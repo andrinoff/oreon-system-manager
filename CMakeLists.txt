@@ -9,6 +9,15 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Core Concurrent)
 
+option(BUILD_COVERAGE "Instrument with gcov for coverage reporting" OFF)
+if(BUILD_COVERAGE)
+    if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        message(FATAL_ERROR "BUILD_COVERAGE requires GCC or Clang")
+    endif()
+    add_compile_options(--coverage -O0)
+    add_link_options(--coverage)
+endif()
+
 # All non-main code lives in a static lib so tests can link against it
 # without re-compiling every source file.
 add_library(oreon_core STATIC
