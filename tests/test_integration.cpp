@@ -21,8 +21,11 @@ class TestIntegration : public QObject
 {
     Q_OBJECT
 
-private slots:
-    void initTestCase() { prependMockDir(); }
+  private slots:
+    void initTestCase()
+    {
+        prependMockDir();
+    }
 
     void packageSearch_populatesList();
     void repoLoad_populatesList();
@@ -40,7 +43,10 @@ void TestIntegration::packageSearch_populatesList()
     auto buttons = page.findChildren<QPushButton *>();
     QPushButton *searchBtn = nullptr;
     for (auto *b : buttons) {
-        if (b->text() == "Search") { searchBtn = b; break; }
+        if (b->text() == "Search") {
+            searchBtn = b;
+            break;
+        }
     }
     QVERIFY(searchBtn != nullptr);
 
@@ -56,7 +62,10 @@ void TestIntegration::packageSearch_populatesList()
     // Mock dnf always includes "vim" in its search output.
     bool found = false;
     for (int i = 0; i < list->count(); ++i)
-        if (list->item(i)->text().contains("vim", Qt::CaseInsensitive)) { found = true; break; }
+        if (list->item(i)->text().contains("vim", Qt::CaseInsensitive)) {
+            found = true;
+            break;
+        }
     QVERIFY(found);
 }
 

@@ -21,8 +21,8 @@ DriversPage::DriversPage(QWidget *parent)
     title->setObjectName("pageTitle");
     root->addWidget(title);
 
-    auto *desc = new QLabel(
-        "Detect hardware and install the appropriate drivers via DNF or akmod.", this);
+    auto *desc =
+        new QLabel("Detect hardware and install the appropriate drivers via DNF or akmod.", this);
     desc->setWordWrap(true);
     desc->setObjectName("pageSubtitle");
     root->addWidget(desc);
@@ -31,14 +31,14 @@ DriversPage::DriversPage(QWidget *parent)
 
     m_driverList = new QListWidget(splitter);
 
-    auto *bottomPane   = new QWidget(splitter);
+    auto *bottomPane = new QWidget(splitter);
     auto *bottomLayout = new QVBoxLayout(bottomPane);
     bottomLayout->setContentsMargins(0, 0, 0, 0);
     bottomLayout->setSpacing(6);
 
     auto *btnRow = new QHBoxLayout;
-    m_detectBtn  = new QPushButton("Detect Hardware", this);
-    m_installBtn = new QPushButton("Install Driver",  this);
+    m_detectBtn = new QPushButton("Detect Hardware", this);
+    m_installBtn = new QPushButton("Install Driver", this);
     m_installBtn->setEnabled(false);
     btnRow->addWidget(m_detectBtn);
     btnRow->addWidget(m_installBtn);
@@ -57,16 +57,15 @@ DriversPage::DriversPage(QWidget *parent)
 
     root->addWidget(splitter, 1);
 
-    connect(m_detectBtn,  &QPushButton::clicked, this, &DriversPage::detectDrivers);
+    connect(m_detectBtn, &QPushButton::clicked, this, &DriversPage::detectDrivers);
     connect(m_installBtn, &QPushButton::clicked, this, &DriversPage::onInstallDriver);
-    connect(m_driverList, &QListWidget::itemSelectionChanged, this, [this] {
-        m_installBtn->setEnabled(!m_driverList->selectedItems().isEmpty());
-    });
+    connect(m_driverList, &QListWidget::itemSelectionChanged, this,
+            [this] { m_installBtn->setEnabled(!m_driverList->selectedItems().isEmpty()); });
 
     connect(m_process, &QProcess::readyReadStandardOutput, this, &DriversPage::onProcessOutput);
-    connect(m_process, &QProcess::readyReadStandardError,  this, &DriversPage::onProcessOutput);
-    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, [this](int code, QProcess::ExitStatus) { onProcessFinished(code); });
+    connect(m_process, &QProcess::readyReadStandardError, this, &DriversPage::onProcessOutput);
+    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this](int code, QProcess::ExitStatus) { onProcessFinished(code); });
 }
 
 void DriversPage::detectDrivers()
@@ -76,18 +75,18 @@ void DriversPage::detectDrivers()
     m_output->append("Detecting hardware…");
 
     // Use lspci to enumerate hardware, then suggest likely driver packages
-    runCommand("bash", {"-c",
-        "lspci -mm | awk -F'\"' '{print $2, $4}' | sort -u"
-    });
+    runCommand("bash", {"-c", "lspci -mm | awk -F'\"' '{print $2, $4}' | sort -u"});
 }
 
 void DriversPage::onInstallDriver()
 {
     auto *item = m_driverList->currentItem();
-    if (!item) return;
+    if (!item)
+        return;
 
     const QString pkg = item->data(Qt::UserRole).toString();
-    if (pkg.isEmpty()) return;
+    if (pkg.isEmpty())
+        return;
 
     m_output->clear();
     runCommand("pkexec", {"dnf", "install", "-y", pkg});
@@ -112,9 +111,8 @@ void DriversPage::onProcessOutput()
 
 void DriversPage::onProcessFinished(int exitCode)
 {
-    m_output->append(exitCode == 0
-        ? "\n[Done]"
-        : QString("\n[Failed — exit code %1]").arg(exitCode));
+    m_output->append(exitCode == 0 ? "\n[Done]"
+                                   : QString("\n[Failed — exit code %1]").arg(exitCode));
 }
 
 void DriversPage::runCommand(const QString &program, const QStringList &args)

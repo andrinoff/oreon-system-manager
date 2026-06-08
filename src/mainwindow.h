@@ -9,10 +9,10 @@ class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
-public:
+  public:
     explicit MainWindow(QWidget *parent = nullptr);
 
-private:
+  private:
     Sidebar *m_sidebar;
     QStackedWidget *m_stack;
 

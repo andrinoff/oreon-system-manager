@@ -10,12 +10,10 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 
-static QWidget *makeContainerTab(QListWidget *list,
-                                  const QStringList &actions,
-                                  QObject *receiver,
-                                  std::function<void(const QString &)> handler)
+static QWidget *makeContainerTab(QListWidget *list, const QStringList &actions, QObject *receiver,
+                                 std::function<void(const QString &)> handler)
 {
-    auto *tab    = new QWidget;
+    auto *tab = new QWidget;
     auto *layout = new QVBoxLayout(tab);
     layout->setContentsMargins(0, 8, 0, 0);
     layout->setSpacing(6);
@@ -24,9 +22,8 @@ static QWidget *makeContainerTab(QListWidget *list,
     for (const QString &action : actions) {
         auto *btn = new QPushButton(action);
         btn->setCursor(Qt::PointingHandCursor);
-        QObject::connect(btn, &QPushButton::clicked, receiver, [handler, action] {
-            handler(action);
-        });
+        QObject::connect(btn, &QPushButton::clicked, receiver,
+                         [handler, action] { handler(action); });
         btnRow->addWidget(btn);
     }
     btnRow->addStretch();
@@ -37,11 +34,10 @@ static QWidget *makeContainerTab(QListWidget *list,
 
 // Wire a process so stdout lines populate `list` when `listArg` appears in the
 // arguments, and all output also goes to the shared terminal pane.
-static void connectProcess(QProcess *proc, QListWidget *list,
-                            const QString &listArg, QTextEdit *output)
+static void connectProcess(QProcess *proc, QListWidget *list, const QString &listArg,
+                           QTextEdit *output)
 {
-    QObject::connect(proc, &QProcess::readyReadStandardOutput,
-                     proc, [proc, list, listArg, output] {
+    QObject::connect(proc, &QProcess::readyReadStandardOutput, proc, [proc, list, listArg, output] {
         const QByteArray data = proc->readAllStandardOutput();
         if (proc->arguments().contains(listArg)) {
             for (const QByteArray &line : data.split('\n')) {
@@ -53,18 +49,15 @@ static void connectProcess(QProcess *proc, QListWidget *list,
         output->append(QString::fromUtf8(data));
     });
 
-    QObject::connect(proc, &QProcess::readyReadStandardError,
-                     proc, [proc, output] {
+    QObject::connect(proc, &QProcess::readyReadStandardError, proc, [proc, output] {
         output->append(QString::fromUtf8(proc->readAllStandardError()));
     });
 
-    QObject::connect(proc,
-                     QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                     output, [output](int code, QProcess::ExitStatus) {
-        output->append(code == 0
-            ? "\n[Done]"
-            : QString("\n[Failed — exit code %1]").arg(code));
-    });
+    QObject::connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), output,
+                     [output](int code, QProcess::ExitStatus) {
+                         output->append(code == 0 ? "\n[Done]"
+                                                  : QString("\n[Failed — exit code %1]").arg(code));
+                     });
 }
 
 ContainerPage::ContainerPage(QWidget *parent)
@@ -82,8 +75,8 @@ ContainerPage::ContainerPage(QWidget *parent)
 
     auto *splitter = new QSplitter(Qt::Vertical, this);
 
-    m_tabs          = new QTabWidget(splitter);
-    m_dockerList    = new QListWidget;
+    m_tabs = new QTabWidget(splitter);
+    m_dockerList = new QListWidget;
     m_distroboxList = new QListWidget;
 
     m_output = new QTextEdit(splitter);
@@ -91,22 +84,16 @@ ContainerPage::ContainerPage(QWidget *parent)
     m_output->setObjectName("terminal");
     m_output->setPlaceholderText("Command output appears here…");
 
-    connectProcess(m_dockerProcess,    m_dockerList,    "ps",   m_output);
+    connectProcess(m_dockerProcess, m_dockerList, "ps", m_output);
     connectProcess(m_distroboxProcess, m_distroboxList, "list", m_output);
 
-    m_tabs->addTab(
-        makeContainerTab(m_dockerList,
-                         {"Start", "Stop", "Remove", "Refresh"},
-                         this,
-                         [this](const QString &a) { onDockerAction(a); }),
-        "Docker");
+    m_tabs->addTab(makeContainerTab(m_dockerList, {"Start", "Stop", "Remove", "Refresh"}, this,
+                                    [this](const QString &a) { onDockerAction(a); }),
+                   "Docker");
 
-    m_tabs->addTab(
-        makeContainerTab(m_distroboxList,
-                         {"Enter", "Stop", "Delete", "Refresh"},
-                         this,
-                         [this](const QString &a) { onDistroboxAction(a); }),
-        "Distrobox");
+    m_tabs->addTab(makeContainerTab(m_distroboxList, {"Enter", "Stop", "Delete", "Refresh"}, this,
+                                    [this](const QString &a) { onDistroboxAction(a); }),
+                   "Distrobox");
 
     splitter->addWidget(m_tabs);
     splitter->addWidget(m_output);
@@ -133,28 +120,42 @@ void ContainerPage::refreshDistrobox()
 
 void ContainerPage::onDockerAction(const QString &action)
 {
-    if (action == "Refresh") { refreshDocker(); return; }
+    if (action == "Refresh") {
+        refreshDocker();
+        return;
+    }
 
     auto *item = m_dockerList->currentItem();
-    if (!item) return;
+    if (!item)
+        return;
 
     const QString name = item->text().split('\t').first();
-    if (action == "Start")       runDocker({"start", name});
-    else if (action == "Stop")   runDocker({"stop",  name});
-    else if (action == "Remove") runDocker({"rm",    name});
+    if (action == "Start")
+        runDocker({"start", name});
+    else if (action == "Stop")
+        runDocker({"stop", name});
+    else if (action == "Remove")
+        runDocker({"rm", name});
 }
 
 void ContainerPage::onDistroboxAction(const QString &action)
 {
-    if (action == "Refresh") { refreshDistrobox(); return; }
+    if (action == "Refresh") {
+        refreshDistrobox();
+        return;
+    }
 
     auto *item = m_distroboxList->currentItem();
-    if (!item) return;
+    if (!item)
+        return;
 
     const QString name = item->text().split('|').first().trimmed();
-    if (action == "Enter")       runDistrobox({"enter", name});
-    else if (action == "Stop")   runDistrobox({"stop",  name});
-    else if (action == "Delete") runDistrobox({"rm",    name});
+    if (action == "Enter")
+        runDistrobox({"enter", name});
+    else if (action == "Stop")
+        runDistrobox({"stop", name});
+    else if (action == "Delete")
+        runDistrobox({"rm", name});
 }
 
 void ContainerPage::runDocker(const QStringList &args)

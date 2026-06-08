@@ -12,23 +12,23 @@ class PackagePage : public QWidget
 {
     Q_OBJECT
 
-public:
+  public:
     explicit PackagePage(QWidget *parent = nullptr);
 
-private slots:
+  private slots:
     void onSearch();
     void onInstall();
     void onRemove();
     void onProcessOutput();
     void onProcessFinished(int exitCode);
 
-private:
+  private:
     void runDnf(const QStringList &args);
 
-    QLineEdit   *m_searchBar;
+    QLineEdit *m_searchBar;
     QListWidget *m_packageList;
     QPushButton *m_installBtn;
     QPushButton *m_removeBtn;
-    QTextEdit   *m_output;
-    QProcess    *m_process;
+    QTextEdit *m_output;
+    QProcess *m_process;
 };

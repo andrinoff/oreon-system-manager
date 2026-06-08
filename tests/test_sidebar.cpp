@@ -8,7 +8,7 @@ class TestSidebar : public QObject
 {
     Q_OBJECT
 
-private slots:
+  private slots:
     void defaultsToFirstPage();
     void emitsCorrectIndexOnClick();
     void onlyOneButtonCheckedAtATime();

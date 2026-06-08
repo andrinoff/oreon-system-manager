@@ -26,10 +26,10 @@ void MainWindow::setupUi()
     layout->setSpacing(0);
 
     m_stack = new QStackedWidget(this);
-    m_stack->addWidget(new PackagePage(this));    // index 0
-    m_stack->addWidget(new RepoPage(this));       // index 1
-    m_stack->addWidget(new ContainerPage(this));  // index 2
-    m_stack->addWidget(new DriversPage(this));    // index 3
+    m_stack->addWidget(new PackagePage(this));   // index 0
+    m_stack->addWidget(new RepoPage(this));      // index 1
+    m_stack->addWidget(new ContainerPage(this)); // index 2
+    m_stack->addWidget(new DriversPage(this));   // index 3
 
     m_sidebar = new Sidebar(this);
     connect(m_sidebar, &Sidebar::pageRequested, m_stack, &QStackedWidget::setCurrentIndex);

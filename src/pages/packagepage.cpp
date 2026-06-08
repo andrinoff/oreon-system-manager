@@ -43,7 +43,7 @@ PackagePage::PackagePage(QWidget *parent)
 
     auto *btnRow = new QHBoxLayout;
     m_installBtn = new QPushButton("Install", this);
-    m_removeBtn  = new QPushButton("Remove",  this);
+    m_removeBtn = new QPushButton("Remove", this);
     m_installBtn->setEnabled(false);
     m_removeBtn->setEnabled(false);
     btnRow->addWidget(m_installBtn);
@@ -64,10 +64,10 @@ PackagePage::PackagePage(QWidget *parent)
 
     root->addWidget(splitter, 1);
 
-    connect(searchBtn,     &QPushButton::clicked,  this, &PackagePage::onSearch);
-    connect(m_searchBar,   &QLineEdit::returnPressed, this, &PackagePage::onSearch);
-    connect(m_installBtn,  &QPushButton::clicked,  this, &PackagePage::onInstall);
-    connect(m_removeBtn,   &QPushButton::clicked,  this, &PackagePage::onRemove);
+    connect(searchBtn, &QPushButton::clicked, this, &PackagePage::onSearch);
+    connect(m_searchBar, &QLineEdit::returnPressed, this, &PackagePage::onSearch);
+    connect(m_installBtn, &QPushButton::clicked, this, &PackagePage::onInstall);
+    connect(m_removeBtn, &QPushButton::clicked, this, &PackagePage::onRemove);
     connect(m_packageList, &QListWidget::itemSelectionChanged, this, [this] {
         bool sel = !m_packageList->selectedItems().isEmpty();
         m_installBtn->setEnabled(sel);
@@ -75,15 +75,16 @@ PackagePage::PackagePage(QWidget *parent)
     });
 
     connect(m_process, &QProcess::readyReadStandardOutput, this, &PackagePage::onProcessOutput);
-    connect(m_process, &QProcess::readyReadStandardError,  this, &PackagePage::onProcessOutput);
-    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-            this, [this](int code, QProcess::ExitStatus) { onProcessFinished(code); });
+    connect(m_process, &QProcess::readyReadStandardError, this, &PackagePage::onProcessOutput);
+    connect(m_process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished), this,
+            [this](int code, QProcess::ExitStatus) { onProcessFinished(code); });
 }
 
 void PackagePage::onSearch()
 {
     const QString query = m_searchBar->text().trimmed();
-    if (query.isEmpty()) return;
+    if (query.isEmpty())
+        return;
 
     m_packageList->clear();
     m_output->clear();
@@ -93,7 +94,8 @@ void PackagePage::onSearch()
 void PackagePage::onInstall()
 {
     auto *item = m_packageList->currentItem();
-    if (!item) return;
+    if (!item)
+        return;
 
     // Package name is the first token before whitespace in the list item
     const QString pkg = item->text().split(' ').first().split('.').first();
@@ -104,7 +106,8 @@ void PackagePage::onInstall()
 void PackagePage::onRemove()
 {
     auto *item = m_packageList->currentItem();
-    if (!item) return;
+    if (!item)
+        return;
 
     const QString pkg = item->text().split(' ').first().split('.').first();
     m_output->clear();
@@ -133,9 +136,8 @@ void PackagePage::onProcessOutput()
 
 void PackagePage::onProcessFinished(int exitCode)
 {
-    m_output->append(exitCode == 0
-        ? "\n[Done]"
-        : QString("\n[Failed — exit code %1]").arg(exitCode));
+    m_output->append(exitCode == 0 ? "\n[Done]"
+                                   : QString("\n[Failed — exit code %1]").arg(exitCode));
 }
 
 void PackagePage::runDnf(const QStringList &args)
@@ -149,7 +151,7 @@ void PackagePage::runDnf(const QStringList &args)
         m_process->setProgram("dnf");
         m_process->setArguments(args);
     } else {
-        m_process->setArguments(QStringList{"dnf"} + args);
+        m_process->setArguments(QStringList {"dnf"} + args);
     }
     m_process->start();
 }
