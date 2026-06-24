@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Oreon System Manager
+Comment=Manage the Oreon operating system
+Exec=oreon-system-manager
+Icon=oreon-system-manager
+Type=Application
+Categories=System;Settings;
+Terminal=false

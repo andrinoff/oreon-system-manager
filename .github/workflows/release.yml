@@ -129,23 +129,28 @@ jobs:
           RPM_NAME="${PKG_NAME}-${VERSION}-${RELEASE}.${RPM_ARCH}.rpm"
 
           TOPDIR="$PWD/rpmbuild"
+          rm -rf "$TOPDIR"
           mkdir -p "$TOPDIR"/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
           # Assemble a source tree from the staged install prefix
           mkdir -p "$TOPDIR/SOURCES/$PKG_NAME-$VERSION"
           cp -a pkg/. "$TOPDIR/SOURCES/$PKG_NAME-$VERSION/"
 
-          cat > "$TOPDIR/SPECS/$PKG_NAME.spec" <<'EOF'
-          Name:           oreon-system-manager
-          Version:        %{version}
-          Release:        %{release}%{?dist}
+          # Use a dynamic changelog date and avoid adding %{?dist} twice
+          CHANGELOG_DATE=$(date +'%a %b %d %Y')
+          REPO="${{ github.repository }}"
+
+          cat > "$TOPDIR/SPECS/$PKG_NAME.spec" <<EOF
+          Name:           ${PKG_NAME}
+          Version:        ${VERSION}
+          Release:        ${RELEASE}%{?dist}
           Summary:        Oreon System Manager
           License:        GPLv3
-          URL:            https://github.com/%{repo}
+          URL:            https://github.com/${REPO}
 
           Source0:        %{name}-%{version}.tar.gz
 
-          BuildArch:      %{_arch}
+          BuildArch:      ${RPM_ARCH}
           Requires:       qt6-qtbase
 
           %description
@@ -165,7 +170,7 @@ jobs:
           %doc /RELEASE_INFO.txt
 
           %changelog
-          * Thu Jan 01 2025 Oreon Maintainers <maintainers@oreon.dev> - %{version}-%{release}
+          * ${CHANGELOG_DATE} Oreon Maintainers <maintainers@oreon.dev> - ${VERSION}-${RELEASE}
           - Automated release
           EOF
 
@@ -174,9 +179,6 @@ jobs:
             -czf "$TOPDIR/SOURCES/$PKG_NAME-$VERSION.tar.gz" -C "$TOPDIR/SOURCES" "$PKG_NAME-$VERSION"
 
           rpmbuild --define "_topdir $TOPDIR" \
-                   --define "version $VERSION" \
-                   --define "release $RELEASE" \
-                   --define "repo ${{ github.repository }}" \
                    --target "$RPM_ARCH" \
                    -bb "$TOPDIR/SPECS/$PKG_NAME.spec"
 

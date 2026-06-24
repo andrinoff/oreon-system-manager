@@ -38,13 +38,28 @@ target_include_directories(oreon_core PUBLIC src)
 qt_add_executable(oreon-system-manager src/main.cpp)
 target_link_libraries(oreon-system-manager PRIVATE oreon_core)
 
+set_target_properties(oreon-system-manager PROPERTIES
+    WIN32_EXECUTABLE FALSE
+    MACOSX_BUNDLE FALSE
+)
+
+include(GNUInstallDirs)
+
+install(TARGETS oreon-system-manager
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(FILES assets/logo.png
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/pixmaps
+    RENAME oreon-system-manager.png
+)
+
+install(FILES packaging/oreon-system-manager.desktop
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+)
+
 option(BUILD_TESTING "Build the test suite" ON)
 if(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif()
-
-install(TARGETS oreon-system-manager
-    BUNDLE  DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
