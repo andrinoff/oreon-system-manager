@@ -221,7 +221,8 @@ jobs:
           git config user.name "oreon-release-bot[bot]"
           git config user.email "noreply@oreon.dev"
           git add oreon-11-rp1/oreon-system-manager/oreon-system-manager.spec
-          git commit -m "chore: bump oreon-system-manager to ${{ needs.validate.outputs.tag }}"
+          git commit -m "chore: bump orm to ${{ needs.validate.outputs.tag }}" \
+            -m "Update Version field in oreon-system-manager.spec to ${{ needs.validate.outputs.plain }} following the release of ${{ needs.validate.outputs.tag }}."
           git push origin "$BRANCH"
           gh pr create \
             --repo oreonhq/rpm-specfiles \
