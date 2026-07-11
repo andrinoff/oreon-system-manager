@@ -19,23 +19,21 @@ jobs:
       - name: Install dependencies
         run: |
           dnf install -y \
-            qt6-qtbase-devel \
-            cmake \
-            ninja-build \
-            gcc-c++ \
+            gtk4-devel \
+            glib2-devel \
+            graphene-devel \
+            pango-devel \
+            cairo-devel \
+            gdk-pixbuf2-devel \
+            glib2-devel \
+            pkg-config \
+            gcc \
+            rust \
+            cargo \
             git
 
-      - name: Make mock scripts executable
-        run: chmod +x tests/mocks/*
-
-      - name: Configure
-        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
-
       - name: Build
-        run: cmake --build build --parallel
+        run: make build
 
       - name: Run tests
-        working-directory: build
-        env:
-          QT_QPA_PLATFORM: offscreen
-        run: ctest --output-on-failure --timeout 30
+        run: make test

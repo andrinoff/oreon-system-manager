@@ -1,12 +1,20 @@
 # Oreon System Manager
 
-An all-in-one system management GUI for Fedora-based Linux distributions, built with Qt6. Built for Oreon 11.
+An all-in-one system management GUI for Fedora-based Linux distributions, built with Rust and GTK4. Built for Oreon 11.
+
+## Features
+
+- **Package management** — search, install, and remove packages via `dnf`
+- **Repository management** — list and toggle repositories via `dnf config-manager`
+- **Container management** — manage Docker and Distrobox containers
+- **Driver detection** — detect hardware and install appropriate drivers
+- **Theme support** — Breeze (light), Breeze Dark, Catppuccin Mocha, and Nord themes
 
 ## Requirements
 
-- Qt6 (Widgets, Core, Concurrent)
-- CMake 3.16+
-- GCC or Clang with C++17 support
+- Rust 1.70+ (stable)
+- GTK4 development files
+- `pkg-config`
 - `dnf` and `pkexec` (runtime, Fedora/RHEL-based systems)
 - `docker` (optional, for container management)
 - `distrobox` (optional, for Distrobox management)
@@ -16,7 +24,7 @@ An all-in-one system management GUI for Fedora-based Linux distributions, built 
 Install dependencies:
 
 ```bash
-sudo dnf install qt6-qtbase-devel cmake gcc-c++
+sudo dnf install gtk4-devel pkg-config
 ```
 
 Build:
@@ -28,14 +36,26 @@ Build:
 Or manually:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Debug
-cmake --build build --parallel
+cargo build --release
 ```
 
 Run:
 
 ```bash
-./build/oreon-system-manager
+./target/release/oreon-system-manager
+```
+
+## Development
+
+```bash
+# Debug build
+cargo build
+
+# Run tests
+cargo test
+
+# Run the app
+cargo run
 ```
 
 ## License

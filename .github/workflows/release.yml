@@ -34,10 +34,8 @@ jobs:
         run: |
           set -euo pipefail
           RAW="${{ github.event.inputs.version }}"
-          # Strip a single leading 'v' if present
           PLAIN="${RAW#v}"
 
-          # Strict semver: MAJOR.MINOR.PATCH with optional -prerelease and +build
           SEMVER_RE='^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$'
           if ! printf '%s' "$PLAIN" | grep -Eq "$SEMVER_RE"; then
             echo "::error::'$RAW' is not a valid semantic version (expected X.Y.Z, optionally with -prerelease/+build)."
@@ -45,8 +43,8 @@ jobs:
           fi
 
           TAG="v${PLAIN}"
-          echo "tag=$TAG"        >> "$GITHUB_OUTPUT"
-          echo "plain=$PLAIN"    >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"     >> "$GITHUB_OUTPUT"
+          echo "plain=$PLAIN" >> "$GITHUB_OUTPUT"
           echo "Will release $TAG"
 
   build:
@@ -68,36 +66,33 @@ jobs:
         run: |
           set -e
           dnf install -y --setopt=install_weak_deps=False \
-            qt6-qtbase-devel \
-            cmake \
-            ninja-build \
-            gcc-c++ \
+            gtk4-devel \
+            glib2-devel \
+            graphene-devel \
+            pango-devel \
+            cairo-devel \
+            gdk-pixbuf2-devel \
+            pkg-config \
+            gcc \
+            rust \
+            cargo \
             git
 
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure
-        run: |
-          cmake -B build -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX=/usr \
-            -DBUILD_TESTING=OFF
-
-      - name: Build
-        run: cmake --build build --parallel "$(nproc)"
+      - name: Build release binary
+        run: make release
 
       - name: Stage install tree
         run: |
           set -e
+          make install DESTDIR="$PWD/stage" PREFIX=/usr
           mkdir -p pkg
-          DESTDIR="$PWD/stage" cmake --install build
-          # Flatten the staged /usr prefix into a top-level tree for packaging
           if [ -d "stage/usr" ]; then
             mkdir -p pkg/usr
             cp -a stage/usr/. pkg/usr/
           fi
-          # Embed metadata for traceability
           printf 'version=%s\narch=%s\ncommit=%s\nsource=%s\n' \
             "${{ needs.validate.outputs.plain }}" \
             "${{ matrix.arch }}" \

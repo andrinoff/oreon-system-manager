@@ -1,4 +1,4 @@
-name: Formatting
+name: Lint
 
 on:
   push:
@@ -7,17 +7,41 @@ on:
     branches: [main]
 
 jobs:
-  clang-format:
-    name: clang-format check
+  fmt:
+    name: cargo fmt
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+      - name: Check formatting
+        run: make fmt-check
 
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang-format
-        run: sudo apt-get install -y clang-format
-
-      - name: Check formatting
+      - name: Install GTK4 and build dependencies
         run: |
-          find src tests -type f \( -name '*.cpp' -o -name '*.h' \) \
-            | xargs clang-format --dry-run --Werror
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            libgtk-4-dev \
+            libglib2.0-dev \
+            libglib2.0-bin \
+            libgraphene-1.0-dev \
+            libpango1.0-dev \
+            libcairo2-dev \
+            libgdk-pixbuf-2.0-dev \
+            pkg-config
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run clippy
+        run: cargo clippy --all-targets -- -D warnings
